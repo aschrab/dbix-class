@@ -16,6 +16,7 @@ use Data::Dumper::Concise 'Dumper';
 use Sub::Name 'subname';
 use Try::Tiny;
 use File::Path 'make_path';
+use overload ();
 use namespace::clean;
 
 
@@ -1487,9 +1488,29 @@ sub _prep_for_execute {
 
   my ($sql, @bind) = $self->sql_maker->$op($ident, @$args);
 
-  unshift(@bind,
-    map { ref $_ eq 'ARRAY' ? $_ : [ '!!dummy', $_ ] } @$extra_bind)
-      if $extra_bind;
+  if ($extra_bind) {
+    my ($pre_bind, $post_bind);
+
+    if (ref $extra_bind eq 'ARRAY') {
+      $pre_bind = $extra_bind;
+    }
+    elsif (ref $extra_bind eq 'HASH') {
+      $pre_bind  = $extra_bind->{pre_bind};
+      $post_bind = $extra_bind->{post_bind};
+    }
+    else {
+      $self->throw_exception('Invalid type for $extra_bind: '.ref($extra_bind));
+    }
+
+    unshift(@bind,
+      map { ref $_ eq 'ARRAY' ? $_ : [ '!!dummy', $_ ] } @$pre_bind)
+        if $pre_bind;
+
+    push(@bind,
+      map { ref $_ eq 'ARRAY' ? $_ : [ '!!dummy', $_ ] } @$post_bind)
+        if $post_bind;
+  }
+
   return ($sql, \@bind);
 }
 
@@ -1550,10 +1571,14 @@ sub _dbh_execute {
     }
 
     foreach my $data (@data) {
-      my $ref = ref $data;
-      $data = $ref && $ref ne 'ARRAY' ? ''.$data : $data; # stringify args (except arrayrefs)
+      $data = ''.$data if ref $data && overload::Method($data, '""');
 
-      $sth->bind_param($placeholder_index, $data, $attributes);
+      if (ref $data eq 'SCALAR') {
+        $sth->bind_param_inout($placeholder_index, $data, $attributes);
+      }
+      else {
+        $sth->bind_param($placeholder_index, $data, $attributes);
+      }
       $placeholder_index++;
     }
   }
@@ -1602,6 +1627,10 @@ sub _prefetch_autovalues {
   \%values;
 }
 
+# Indicator for whether INSERT ... RETURNING uses bind values to hold the
+# returned values.
+sub _should_bind_returning { 0 }
+
 sub insert {
   my ($self, $source, $to_insert) = @_;
 
@@ -1620,23 +1649,30 @@ sub insert {
       $source->primary_columns
   );
 
-  my $sqla_opts;
-  if ($self->_use_insert_returning) {
+  my $bind_attributes = $self->source_bind_attributes($source);
 
+  my $sqla_opts;
+  my $post_bind = [];
+  my @returned;
+
+  if ($self->_use_insert_returning && %fetch_pks) {
     # retain order as declared in the resultsource
-    for (sort { $fetch_pks{$a} <=> $fetch_pks{$b} } keys %fetch_pks ) {
-      push @{$sqla_opts->{returning}}, $_;
+    my @returning = sort { $fetch_pks{$a} <=> $fetch_pks{$b} } keys %fetch_pks;
+
+    $sqla_opts->{returning} = \@returning;
+
+    if ($self->_should_bind_returning) {
+      @returned = (undef) x @returning;
+      $post_bind = [ map \$returned[$_], 0..$#returned ];
     }
   }
 
-  my $bind_attributes = $self->source_bind_attributes($source);
-
-  my ($rv, $sth) = $self->_execute('insert' => [], $source, $bind_attributes, $to_insert, $sqla_opts);
+  my ($rv, $sth) = $self->_execute('insert' => { post_bind => $post_bind }, $source, $bind_attributes, $to_insert, $sqla_opts);
 
   my %returned_cols;
 
   if (my $retlist = $sqla_opts->{returning}) {
-    my @ret_vals = try {
+    my @ret_vals = @returned ? @returned : try {
       local $SIG{__WARN__} = sub {};
       my @r = $sth->fetchrow_array;
       $sth->finish;

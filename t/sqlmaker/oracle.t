@@ -1,4 +1,3 @@
-
 use strict;
 use warnings;
 use Test::More;
@@ -104,5 +103,91 @@ is (
   'FooBarBaz_72M8CIDTM7KBAUPXG48B',
   '_shorten_identifier with keywords ok',
 );
+
+# test SQL generation for INSERT ... RETURNING
+
+{
+  local $sqla_oracle->{quote_char} = '';
+
+  my ($sql, @bind) = $sqla_oracle->insert(
+    'artist',
+    {
+      'name' => 'Testartist',
+    },
+    {
+      'returning' => [ 'artistid' ],
+    },
+  );
+
+  is_same_sql_bind(
+    $sql, \@bind,
+    q/INSERT INTO artist (name) VALUES (?) RETURNING artistid INTO ?/,
+      [ 'Testartist' ],
+    'sql_maker generates insert returning for one column'
+  );
+}
+
+{
+  local $sqla_oracle->{quote_char} = '';
+
+  my ($sql, @bind) = $sqla_oracle->insert(
+    'computed_column_test',
+    {
+      'a_timestamp' => '2010-05-26 18:22:00',
+    },
+    {
+      'returning' => [ 'id', 'a_computed_column', 'charfield' ],
+    },
+  );
+
+  is_same_sql_bind(
+    $sql, \@bind,
+    q/INSERT INTO computed_column_test (a_timestamp) VALUES (?) RETURNING id, a_computed_column, charfield INTO ?, ?, ?/,
+      [ '2010-05-26 18:22:00' ],
+    'sql_maker generates insert returning for multiple columns'
+  );
+}
+
+{
+  local $sqla_oracle->{quote_char} = '"';
+
+  my ($sql, @bind) = $sqla_oracle->insert(
+    'artist',
+    {
+      'name' => 'Testartist',
+    },
+    {
+      'returning' => [ 'artistid' ],
+    },
+  );
+
+  is_same_sql_bind(
+    $sql, \@bind,
+    q/INSERT INTO "artist" ("name") VALUES (?) RETURNING "artistid" INTO ?/,
+      [ 'Testartist' ],
+    'got correct SQL and bind parameters for insert query with one returned column and quoting'
+  );
+}
+
+{
+  local $sqla_oracle->{quote_char} = '"';
+
+  my ($sql, @bind) = $sqla_oracle->insert(
+    'computed_column_test',
+    {
+      'a_timestamp' => '2010-05-26 18:22:00',
+    },
+    {
+      'returning' => [ 'id', 'a_computed_column', 'charfield' ],
+    },
+  );
+
+  is_same_sql_bind(
+    $sql, \@bind,
+    q/INSERT INTO "computed_column_test" ("a_timestamp") VALUES (?) RETURNING "id", "a_computed_column", "charfield" INTO ?, ?, ?/,
+      [ '2010-05-26 18:22:00' ],
+    'got correct SQL and bind parameters for insert query with multiple returned column and quoting'
+  );
+}
 
 done_testing;

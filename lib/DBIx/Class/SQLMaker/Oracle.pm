@@ -183,4 +183,26 @@ sub _unqualify_colname {
   return $self->_shorten_identifier($self->next::method($fqcn));
 }
 
+#
+# Oracle has a different INSERT...RETURNING syntax
+#
+
+sub _insert_returning {
+  my ($self, $fields) = @_;
+
+  my $f = $self->_SWITCH_refkind($fields, {
+    ARRAYREF     => sub {join ', ', map { $self->_quote($_) } @$fields;},
+    SCALAR       => sub {$self->_quote($fields)},
+    SCALARREF    => sub {$$fields},
+  });
+  
+  my $bind_f = $self->_SWITCH_refkind($fields, {
+    ARRAYREF     => sub { join ', ', ('?') x @$fields; },
+    SCALAR       => sub { '?' },
+    SCALARREF    => sub { '?' },
+  });
+  
+  return join (' ', $self->_sqlcase(' returning'), $f, $self->_sqlcase('into'), $bind_f);
+}
+
 1;
