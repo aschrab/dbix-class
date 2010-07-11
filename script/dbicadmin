@@ -53,14 +53,14 @@ my ($opts, $usage) = describe_options(
     ['connect-info:s%' => 'Supply the connect info as additonal options ie -I dsn=<dsn> user=<user> password=<pass> '],
     ['connect:s' => 'Supply the connect info as a json string' ],
     ['sql-dir:s' => 'The directory where sql diffs will be created'],
-    ['sql-type:s' => 'The RDBMs flavour you wish to use'],
+    ['sql-type:s' => 'The RDBMs flavour you wish to use'],  # <--- FIXME! no has() in Admin.pm
     ['version:i' => 'Supply a version install'],
     ['preversion:s' => 'The previous version to diff against',],
     ['set:s' => 'JSON data used to perform data operations' ],
     ['attrs:s' => 'JSON string to be used for the second argument for search'],
     ['where:s' => 'JSON string to be used for the where clause of search'],
     ['force' => 'Be forceful with some operations'],
-    ['trace' => 'Turn on DBIx::Class trace output'],
+    ['trace' => 'Turn on DBIx::Class trace output'],  # <--- FIXME! no has() in Admin.pm
     ['quiet' => 'Be less verbose'],
     ['I:s@' => 'Same as perl\'s -I, prepended to current @INC'],
   )
