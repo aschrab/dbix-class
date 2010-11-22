@@ -17,4 +17,8 @@ __PACKAGE__->has_many('images', 'DBICTest::Schema::Image', 'artwork_id');
 __PACKAGE__->has_many('artwork_to_artist', 'DBICTest::Schema::Artwork_to_Artist', 'artwork_cd_id');
 __PACKAGE__->many_to_many('artists', 'artwork_to_artist', 'artist');
 
+# both to test manytomany with custom rel
+__PACKAGE__->many_to_many('artists_test_m2m', 'artwork_to_artist', 'artist_test_m2m');
+__PACKAGE__->many_to_many('artists_test_m2m_noopt', 'artwork_to_artist', 'artist_test_m2m_noopt');
+
 1;
