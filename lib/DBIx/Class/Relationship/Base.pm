@@ -469,8 +469,9 @@ sub related_resultset {
 
         $attrs->{from} =
           [ { $rel => $self->result_source->from },
-            [ { 'me' => $self->result_source->related_source($rel)->from }, { 1 => 1 } ] ];
+            [ { 'me' => $self->result_source->related_source($rel)->from }, $cond ] ];
 
+        $cond = {};
         $cond->{"${rel}.${_}"} = $self->get_column($_) for $self->result_source->primary_columns;
       }
     }
