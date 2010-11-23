@@ -121,17 +121,22 @@ my $artwork = $schema->resultset('Artwork')->search({},{ order_by => 'cd_id' })-
 my @artists = $artwork->artists->all;
 is(scalar @artists, 2, 'the two artists are associated');
 
-lives_ok {
-  my @artwork_artists = $artwork->artwork_to_artist->all;
-  foreach (@artwork_artists) {
+my @artwork_artists = $artwork->artwork_to_artist->all;
+foreach (@artwork_artists) {
+  lives_ok {
     my $artista = $_->artist;
     my $artistb = $_->artist_test_m2m;
     ok($artista->rank < 10 ? $artistb : 1, 'belongs_to with custom rel works.');
     my $artistc = $_->artist_test_m2m_noopt;
     ok($artista->rank < 10 ? $artistc : 1, 'belongs_to with custom rel works even in non-simplified.');
-  }
-} 'belongs_to works with custom rels';
+  } 'belongs_to works with custom rels';
+}
 
+@artists = ();
+lives_ok {
+  @artists = $artwork->artists_test_m2m2->all;
+} 'manytomany with extended rels in the has many works';
+is(scalar @artists, 2, 'two artists');
 
 @artists = ();
 lives_ok {
