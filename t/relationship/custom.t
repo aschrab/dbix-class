@@ -120,12 +120,9 @@ is(
 );
 
 # try a specific everything via a non-simplified rel
-TODO: {
-  local $TODO = 'Error message needs to be more specific';
-  throws_ok {
-    $artist->create_related('cds_90s', { title => 'related_creation 4', year => '2038' });
-  } qr/unable to set_from_related - no simplified condition available for 'cds_90s'/, 'Create failed - non-simplified rel';
-}
+throws_ok {
+  $artist->create_related('cds_90s', { title => 'related_creation 4', year => '2038' });
+} qr/unable to set_from_related - no simplified condition available for 'cds_90s'/, 'Create failed - non-simplified rel';
 
 # Do a self-join last-entry search
 my @last_track_ids;
