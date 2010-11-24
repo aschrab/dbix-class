@@ -452,8 +452,10 @@ sub related_resultset {
       # back, get a resultset for the current row and do a
       # search_related there.
       my $row_srcname = $source->source_name;
-      my %identity = map { ( $_ => $self->get_column($_) ) } $source->primary_columns;
-      my $row_rs = $source->schema->resultset($row_srcname)->search(\%identity);
+      my $base_rs = $source->schema->resultset($row_srcname);
+      my $alias = $base_rs->current_source_alias;
+      my %identity = map { ( "${alias}.${_}" => $self->get_column($_) ) } $source->primary_columns;
+      my $row_rs = $base_rs->search(\%identity);
 
       $row_rs->search_related($rel, $query, $attrs);
 
