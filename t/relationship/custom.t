@@ -37,6 +37,15 @@ my @cds_90s = $artist2->cds_90s;
 is(@cds_90s, 6, '6 90s cds found (1990 - 1995) even with non-optimized search');
 map { ok($_->year < 2000 && $_->year > 1989) } @cds_90s;
 
+my @cds_90s_95 = $artist2->cds_90s->search({ 'year' => 1995 });
+is(@cds_90s_95, 1, '1 90s (95) cds found even with non-optimized search');
+map { ok($_->year == 1995) } @cds_90s_95;
+
+throws_ok {
+  my @cds_90s_95 = $artist2->cds_90s->search({ 'me.year' => 1995 });
+  is(@cds_90s_95, 1, '1 90s (95) cds found even with non-optimized search');
+  map { ok($_->year == 1995) } @cds_90s_95;
+} qr/no such column: me\.year/, 'should not presume "me" alias';
 
 # search for all artists prefetching published cds in the 80s...
 #####
