@@ -206,6 +206,9 @@ sub DESTROY {
   # some databases spew warnings on implicit disconnect
   local $SIG{__WARN__} = sub {};
   $self->_dbh(undef);
+
+  # This weird delete is a workaround for the even weirder RT#63349
+  delete $SIG{__WARN__};
 }
 
 # handle pid changes correctly - do not destroy parent's connection
