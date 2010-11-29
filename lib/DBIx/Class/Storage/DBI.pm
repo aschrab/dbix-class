@@ -769,7 +769,7 @@ sub txn_do {
   local $self->{_in_dbh_do} = 1;
 
   my @result;
-  my $want_array = wantarray;
+  my $want = wantarray;
 
   my $tried = 0;
   while(1) {
@@ -781,10 +781,10 @@ sub txn_do {
     try {
       $self->txn_begin;
       my $txn_start_depth = $self->transaction_depth;
-      if($want_array) {
+      if($want) {
           @result = $coderef->(@$args);
       }
-      elsif(defined $want_array) {
+      elsif(defined $want) {
           $result[0] = $coderef->(@$args);
       }
       else {
@@ -803,7 +803,7 @@ sub txn_do {
       $exception = $_;
     };
 
-    if(! defined $exception) { return $want_array ? @result : $result[0] }
+    if(! defined $exception) { return wantarray ? @result : $result[0] }
 
     if($self->transaction_depth > 1 || $tried++ || $self->connected) {
       my $rollback_exception;
@@ -2638,8 +2638,7 @@ sub deployment_statements {
   );
 
   my @ret;
-  my $wa = wantarray;
-  if ($wa) {
+  if (wantarray) {
     @ret = $tr->translate;
   }
   else {
@@ -2649,7 +2648,7 @@ sub deployment_statements {
   $self->throw_exception( 'Unable to produce deployment statements: ' . $tr->error)
     unless (@ret && defined $ret[0]);
 
-  return $wa ? @ret : $ret[0];
+  return wantarray ? @ret : $ret[0];
 }
 
 sub deploy {
