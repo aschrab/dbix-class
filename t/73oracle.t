@@ -145,7 +145,9 @@ for my $use_insert_returning ($test_server_supports_insert_returning
     delete $artist_rsrc->column_info('artistid')->{sequence};
     $new = $artistfqn_rs->create( { name => 'bar' } );
 
-    is( $new->artistid, 2, "Oracle Auto-PK worked with fully-qualified tablename" );
+    is_deeply( {map { $_ => $new->$_ } $artist_rsrc->primary_columns},
+      { artistid => 2, autoinc_col => 2},
+      "Oracle Multi-Auto-PK worked with fully-qualified tablename" );
 
 
     delete $artist_rsrc->column_info('artistid')->{sequence};
