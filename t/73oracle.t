@@ -24,7 +24,7 @@
       is_auto_increment => 1,
     },
   );
-  __PACKAGE__->set_primary_key('artistid');
+  __PACKAGE__->set_primary_key(qw/ artistid autoinc_col /);
 
   1;
 }
