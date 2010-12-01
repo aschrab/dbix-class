@@ -370,7 +370,7 @@ sub _run_tests {
     local $TODO = "On Oracle8i all_triggers view is empty, i don't yet know why..."
       if $schema->storage->_server_info->{normalized_dbms_version} < 9;
 
-    my $schema2 = $schema->clone->connect($dsn2, $user2, $pass2);
+    my $schema2 = $schema->connect($dsn2, $user2, $pass2);
 
 
     my $schema1_dbh  = $schema->storage->dbh;
